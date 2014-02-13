@@ -15,6 +15,7 @@
  */
 apply plugin: 'groovy'
 apply plugin: 'maven'
+apply plugin: 'signing'
 apply plugin: 'idea'
 
 repositories {
@@ -35,10 +36,12 @@ dependencies {
     testCompile "com.google.guava:guava:16.0.1"
     testCompile "com.googlecode.dex2jar:dex-tools:0.0.9.15@zip"
     testCompile "net.sf.proguard:proguard-anttask:4.11"
+    testCompile "org.apache.commons:commons-lang3:3.2.1"
     testCompile "org.scala-lang:scala-compiler:2.10.3"
     testCompile "org.mockito:mockito-core:1.9.5"
 }
 
+description 'Gradle Android Scala Plugin adds scala language support to official gradle android plugin.'
 group = 'jp.leafytree.gradle'
 version = '1.0-SNAPSHOT'
 
@@ -47,9 +50,63 @@ uploadArchives {
         mavenDeployer {
             repository(url: uri('gh-pages/repository/snapshot'))
         }
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: "user", password: "password")
+            }
+            pom.project {
+                name 'Android Gradle Scala Plugin'
+                packaging 'jar'
+                description project.description
+                url 'https://github.com/saturday06/gradle-android-scala-plugin'
+
+                scm {
+                    url 'scm:git@github.com:saturday06/gradle-android-scala-plugin.git'
+                    connection 'scm:git@github.com:saturday06/gradle-android-scala-plugin.git'
+                    developerConnection 'scm:git@github.com:saturday06/gradle-android-scala-plugin.git'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+
+                //developers {
+                //    developer {
+                //        id sonatypeUsername
+                //        name sonatypeFullname
+                //    }
+                //}
+            }
+        }
     }
+}
+
+artifacts {
+    archives jar
+    // archives javadocJar
+    // archives sourcesJar
+}
+
+signing {
+    sign configurations.archives
 }
 
 task integTest(type: jp.leafytree.gradle.AndroidScalaPluginIntegrationTestTask)
 task integrationTest(type: jp.leafytree.gradle.AndroidScalaPluginIntegrationTestTask)
 task sample(type: jp.leafytree.gradle.AndroidScalaPluginSampleTask)
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
